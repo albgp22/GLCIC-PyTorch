@@ -6,11 +6,12 @@ from PIL import Image
 
 
 class ImageDataset(data.Dataset):
-    def __init__(self, data_dir, transform=None, recursive_search=False):
+    def __init__(self, data_dir, transform=None, recursive_search=False, aumentation=None):
         super(ImageDataset, self).__init__()
         self.data_dir = os.path.expanduser(data_dir)
         self.transform = transform
         self.imgpaths = self.__load_imgpaths_from_dir(self.data_dir, walk=recursive_search)
+        self.aumentation = aumentation
 
     def __len__(self):
         return len(self.imgpaths)
@@ -20,6 +21,8 @@ class ImageDataset(data.Dataset):
         img = img.convert(color_format)
         if self.transform is not None:
             img = self.transform(img)
+        if self.aumentation is not None:
+            img = self.aumentation(img)
         return img
 
     def __is_imgfile(self, filepath):

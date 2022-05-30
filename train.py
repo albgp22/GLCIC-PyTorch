@@ -20,12 +20,14 @@ from utils import (
     sample_random_batch,
     poisson_blend,
 )
+import albumentations as A
 
 parser = argparse.ArgumentParser()
 parser.add_argument('data_dir')
 parser.add_argument('result_dir')
 parser.add_argument('--data_parallel', action='store_true')
 parser.add_argument('--recursive_search', action='store_true', default=False)
+parser.add_argument('--aumentate', action='store_true', default=False)
 parser.add_argument('--init_model_cn', type=str, default=None)
 parser.add_argument('--init_model_cd', type=str, default=None)
 parser.add_argument('--steps_1', type=int, default=90000)
@@ -64,6 +66,19 @@ def main(args):
         if not os.path.exists(os.path.join(args.result_dir, phase)):
             os.makedirs(os.path.join(args.result_dir, phase))
 
+    # Set aumentation if enabled
+    aumentation = None
+    if args.aumentate:
+        aumentation = A.Compose(
+          [
+            A.SmallestMaxSize(max_size=160),
+            A.ShiftScaleRotate(shift_limit=0.05, scale_limit=0.05, rotate_limit=15, p=0.5),
+            A.RandomCrop(height=128, width=128),
+            A.RGBShift(r_shift_limit=15, g_shift_limit=15, b_shift_limit=15, p=0.5),
+            A.RandomBrightnessContrast(p=0.5),
+          ]
+        )
+
     # load dataset
     trnsfm = transforms.Compose([
         transforms.Resize(args.cn_input_size),
@@ -74,7 +89,8 @@ def main(args):
     train_dset = ImageDataset(
         os.path.join(args.data_dir, 'train'),
         trnsfm,
-        recursive_search=args.recursive_search)
+        recursive_search=args.recursive_search,
+        aumentation=aumentation)
     test_dset = ImageDataset(
         os.path.join(args.data_dir, 'test'),
         trnsfm,
